@@ -1,0 +1,153 @@
+---
+title: "shiny_notes"
+author: "Amy R Hodgson"
+date: "01/06/2019"
+output: html_document
+---
+
+Following the video tutorial by Garrett Grolemund at https://shiny.rstudio.com/tutorial/
+
+## How to build a shiny app
+
+The recommended template for a shiny app:
+
+```{r, eval=FALSE}
+
+library(shiny)
+
+ui <- fluidPage()
+
+server <- function(input, output) {}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+Can add elements to app by passing them as arguments to fluidPage function, eg `fluidPage("Hello world")`. Useful to think in terms of inputs and outputs. Inputs are things users can use to provide variables/toggle, eg dropdown menus. Outputs are what user sees, eg plots, tables, text. Add to app as arguments to fluidPage, like this:
+
+```{r, eval = F}
+
+ui <- fluidPage(
+  # *Input() functions,
+  # *Output() functions
+)
+
+```
+
+There are many input options (*Input functions) for shiny, for example this would create a slider:
+
+```{r, eval = F}
+
+ui <- fluidPage(
+  sliderInput(inputId = "num",
+              label = "Choose a number",
+              value = 25, min = 1, max = 100)
+)
+
+server <- function(input, output) {}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+All *Input functions have similar syntax. Begin by taking inputId argument, eg "num", allows to assign a name to input. This value can then be available to use in code for server function. Each input in app should have unique name. Second argument is label to explain input, eg "choose a number". Then each Input function takes additional arguments specific to type.
+
+Output functions place different types of output in app, dedicated function for each type, eg tableOutput. Output functions take one required argument outputID to name output object, eg `plotOutput(outputId = "hist")`. 
+
+```{r, eval = F}
+
+ui <- fluidPage(
+  sliderInput(inputId = "num",
+              label = "Choose a number",
+              value = 25, min = 1, max = 100),
+  plotOutput(outputId = "hist")
+)
+
+server <- function(input, output) {}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+However this only tells app name of output, not how to build output. So while space created for plot in underlying HTML, app does not look different. Have to give instructions for building output in server function. Use server function to assemble inputs into outputs. Both input and output must appear in server function as arguments.
+
+To use server function, need to follow 3 rules:
+
+1. Save objects to display to `output$`. Output is just second arg of server function. Both input and output are list-like objects.
+
+```{r, eval = F}
+
+server <- function(input, output) {
+  output$hist <- #code, same name 'hist' as defined in plotOutput function
+}
+
+```
+
+2. Build objects to display with render*(). Render builds reactive output to display in UI. Render functions work with output functions to place an R object as html into shiny webpage. Like output, different render functions to render diff types of output, eg `renderTable()`. Often direct analogue between render function and output function.
+
+Going to plot histogram of 100 random normal values. Render functions take code blocks that build object we want. Braces pass it as unified code block (single chunk), so allow to pass as many lines of code as desired to renderPlot to build histogram.
+
+```{r, eval = F}
+
+server <- function(input, output) {            # So could do it this way
+  output$hist <- renderPlot({hist(rnorm(100))
+    
+  })
+}
+
+server <- function(input, output) {            # Or develop more fully as braces allow for this
+  output$hist <- renderPlot({                  # Can allow for more sophisticated apps/output
+    title <- "100 random normal values"
+    hist(rnorm(100), main = title)
+    
+  })
+}
+
+```
+
+3. Use input values with `input$`. Input values are e.g. those in dropdown menus/sliders etc in app. Input value changes whenever user changes the input.
+
+```{r,eval=F}
+
+server <- function(input, output) {            
+  output$hist <- renderPlot({hist(rnorm(input$num))
+    
+  })
+}
+
+```
+
+Reactivity 101: Reactivity automatically occurs whenever you use an input value to render an output object.
+
+```{r, eval = F}
+
+ui <- fluidPage(
+  sliderInput(inputId = "num", 
+    label = "Choose a number", 
+    value = 25, min = 1, max = 100),
+  plotOutput("hist")
+)
+
+server <- function(input, output) {
+  output$hist <- renderPlot({
+    hist(rnorm(input$num))
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+How to save apps:
+
+Have one directory with every file your app needs
+- app.R (your script which ends with a call to shinyApp()) - has to have this name
+- datasets, images, css, helper scripts, etc
+
+Previously it was necessary to have 2 files for the app- one for the UI and one for the server function. Still possible to do it this way if you want.
+
+Helpfully, if you name your script app.R, RStudio will recognise this and add run app button to top of the page. This allows you to run app either in seperate window or in viewer pane.
+
+Now that app can be packaged up in directory, one option to share online is using shinyapps.io. Free to use (for max 5 apps), server built and maintained by RStudio. To do this, visit shinyapps.io and set up account, linking github/RStudio with site. Upload app and it will have own url. Can then see usage data for app, change settings etc. Can make private so people have to sign in to see it.
+
+Alternatively can build own server. There is a product called Shiny server (rstudio.com/products/shiny/shiny-server), it is a back end program that builds a linux web server specifically designed to host shiny apps. Free and open source program. Can download and use to set up your own server to host shiny apps on internet/intranet.
