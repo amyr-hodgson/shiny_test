@@ -1,0 +1,310 @@
+---
+title: "tutorial_notes_part3"
+author: "Amy R Hodgson"
+date: "02/06/2019"
+output: html_document
+---
+
+## How to customise appearance
+
+FOcusing this time on making the user interface more impressive by altering underlying HTML of the ui of the shiny app.
+
+### Work with the HTML UI
+
+UI of app made with fluidPage is really just HTML. Use R functions to make it, but if run in command line will return HTML, which builds UI of app.
+
+Call R functions that return HTML to build app, these functions write HTML for you- so don't really need to know much HTML, but it would be helful to.
+
+So:
+
+- Call R functions to assemble HTML
+- Use fluidPage() to quickly set up UI
+- Use input* and output* functions to add reactive content
+- Save that output to ui
+
+### Add static content
+
+In addition to reactive, can also just add static components. 
+
+To think about how to do this, can ask- How do you add static content to a normal web page? Building blocks and aspects of style can be written with HTML. But will instead be writing in R, where we can call a function to recreate HTML tags.
+
+When writing R, you can add content with tags functions. The tags object will be a list of functions, and within that object there is a function for every HTML tag you could create with HTML. Example:
+
+`tags$h1()` <-> `<h1> </h1>`  
+`tags$a()` <-> `<a></a>`
+
+So shiny provides R functions to recreate HTML tags. Tags object is a list, and each element is a function that recreates an HTML tag. To see the code inside a function, call like `tags$h1`. If want to use, treat as a function- `tags$h1()`.
+
+Tags functions have their own syntax. Tags is the list of names tags, followed by the function/tag name 'a', which will correspond to desired HTML tag, followed by parentheses. Then can give named argument (so here url named href) which will appear as tag attributes (set boolean attributes to NA). If you pass unnamed arguments, they will appear inside the tags (call tag$...() to create nested tags). So Rstudio will be the text viewer sees and can click.
+
+`tags$a(href = "www.rstudio.com", "RStudio")`
+
+One thing can pass to tags function is a second tags function. Plain text can be passed to fluidPage and will just appear as text on the page.
+
+Headers: `fluidPage(tags$h1("text"), tags$h2("text"))`  
+Weblink: `tags$a()`  
+Text paragraphs: `tags$p("text"), tags$p("text")`  
+Italic text: `tags$em("Text")`  
+Bold text: `tags$strong("text")`  
+Code: `tags$code("text")`  
+Nesting: `tags$p("this is a", tags$strong("shiny"), "app")`  
+Line break: `tags$br()`  
+Horizontal rule: `tags$hr()`  
+Images: `tags$img(height = 100, width = 100, src = "imageurl")`  
+
+All should be inside fluidPage.
+
+Adding images: to add an image from a file, save the file in a subdirectory (same as app.R) named www. Then can just use name of that image (eg image.png) as src. Example is in the app-directory folder in the materials.
+
+Some tags functions come with a wrapper function, so you don't need to call `tags$`. Eg `h1` is a wrapper function for `tags$h1`. All the common functions listed above have wrapper functions. For example see 02-tags.R. 
+
+Can also just pass HTML to the HTML() function within fluidPage and shiny will use it to build the webpage. eg `fluidPage(HTML("<h1> Shiny App </h1>"))`.
+
+So with static elements:
+
+- Add elements with the `tags$` functions
+- For each function, unnamed arguments are passed into HTML tags
+- Named argments are passed as HTML attributes
+- Add raw HTML with HTML()
+
+Can also start with HTML document and add shiny components. Resources on rstudio site for this.
+
+### Create a layout
+
+Use layout funcions to position elements within your app. Think of web page as having an x and y dimension, and can place elements anywhere within this. If think of app in 3 dimensions (adding z dimension), can stack some elements on top of each other.
+
+Layout functions: Add HTML that divides the UI into a grid. `fluidRow()` and `column()` are two main functions.
+
+fluidRow()
+
+`fluidRow()` add rows to the grid. Each new row goes below the previous rows. Place within fluidPage, and each time called, will add new row to app. Doesn't seem to necessarily require arguments.
+
+column()
+
+`column()` adds columns within a row. Each new column goes to the left of the previous column. Specify the width and offset of each column out of 12. Width is how many units wide, offest how far pushed to the right. To place an element in the grid, call it as an argument of a layout function.
+
+```{r, eval = F}
+
+ui <- fluidPage(
+  fluidRow(
+    column(3),
+    column(5)),
+  fluidRow(
+    column(4, offset = 8)
+  )
+)
+
+```
+
+If want to put something in a row, can just pass it as text to fluidRow(). If want to put an output in a column, pass to column, eg `column(2, plotOutput("hist"))`
+
+```{r, eval = F}
+library(shiny)
+
+ui <- fluidPage(
+  fluidRow(
+   column(3),
+   column(5, sliderInput(inputId = "num", 
+     label = "Choose a number", 
+     value = 25, min = 1, max = 100))
+  ),
+  fluidRow(
+    column(4, offset = 8,
+      plotOutput("hist")
+    )
+  )
+)
+
+server <- function(input, output) {
+  output$hist <- renderPlot({
+    hist(rnorm(input$num))
+  })
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+So layout functions:
+
+- Position elements in a grid, or stack them in layers
+- use fluidRow() to arrange elements in rows
+- use column() to arrange elements in columns
+- position columns with width and offset arguments
+
+### Assemble layers of panels
+
+Panels to group multiple elements into a single unit with its own properties. 
+
+wellPanel(): Groups elements into a grey 'well'
+
+```{r, eval = F}
+library(shiny)
+
+ui <- fluidPage(
+  wellPanel(
+    sliderInput(inputId = "num", 
+      label = "Choose a number", 
+      value = 25, min = 1, max = 100),
+    textInput(inputId = "title", 
+      label = "Write a title",
+      value = "Histogram of Random Normal Values")
+  ),
+  plotOutput("hist")
+)
+
+server <- function(input, output) {
+  output$hist <- renderPlot({
+    hist(rnorm(input$num), main = input$title)
+  })
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+There are 12 *Panel functions to make different kinds of panels. 3 of these are involved with stacking panels on top of each other. 
+
+To stack things, begin with tabPanel(). It creates a stackable layer of elements. Each tab is like a small UI of its own.
+
+`tabPanel("Tab1",...)`
+
+Includes title, Tab1, for navigation. Following this, give it whatever elements you want to appear in the tab. Combine tabPanels with one of tabsetPanel(), navlistPanel(), navbarPage().
+
+tabsetPanel() combines tabs into a single panel. Use tabs to navigate between tabs, eg in tabs code. Example:
+
+```{r, eval = F}
+fluidPage(
+  tabsetPanel(
+    tabPanel("Tab1", "contents"),
+    tabPanel("Tab2", "contents")
+    )
+  )
+```
+
+navlistPanel() combines tabs into a single panel. Use links to navigate between tabs. Creates sidebar, works same way as tabset. Eg in navlist code.
+
+```{r, eval = F}
+
+fluidPage(
+  navlistPanel(
+    tabPanel("tab1", "Contents")
+    tabPanel("Tab2", "Contents")
+  )
+)
+
+```
+
+So Panels:
+
+- Panels group elements into a single unit for aesthetic or functional reasons
+- Use tabPanel() to create a stackable panel
+- Use tabsetPanel to arrange tabpanels into a stack with tab navigation
+- Use navlistPanel to arrange tab panels into a stack with sidebar navigation
+
+All documented in shiny layour guide.
+
+### Use a prepackaged layout
+
+sidebarLayout(): Use with sidebarPanel and mainPanel to divide app into two sections- sidebat and main display sections. Takes 2 arguments- output of sidebarPanel and mainPanel. Sidebar can include sliders, text boxes etc. Full example in sidebar code.
+
+```{r, eval = FALSE}
+
+ui <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(),
+    mainPanel()
+  )
+)
+
+```
+
+fixedPage() creates a page that defaults to a width of 724, 940 or 1170 pixels (depending on browser window). Use with fixedRow. Compare to fluidPage and fluidRow which adjust to browser window.
+
+```{r, eval=F}
+ui <- fixedPage(
+  fixedRow(
+    column(5, # etc)
+  )
+)
+```
+
+navbarPage() combines tabs into a single page. navbarPage() replaces fluidPage(). Requires title. With this, the entire app is the stack rather than it being an element. Gives appearance that app is a set of webpages you can navigate back and forth in.
+
+```{r, eval = F}
+navbarPage(title = "Title",
+           tabPanel("tab1", "contents"),
+           tabPanel("tab2", "contents")
+           )
+```
+
+navbarMenu() is a helper function that allows you to put even more tabs into a single navbar. Similar to above, but combines tab links into a dropdown menu for navbarPage.
+
+dashboardPage() comes in the shinydashboard package. Creates aesthetically pleasing page similar to above. Specific tutorial on this on rstudio site.
+
+```{r, eval = F}
+library(shinydashboard)
+
+ui <- dashboardPage(
+  dashboardHeader(),
+  dashboardSidebar(),
+  dashboardBody()
+)
+```
+
+So with prepackaged layouts:
+
+- Use sidebarLayout with sidebarPanel and mainPanel to quickly create a sidebar design
+- Use fixedPanel with fixedRow to create a fixed (non-fluid) design
+- Use navbarPage perhaps with navbarMenu to create 'multipage' app
+- use shinyDashboard package to create dashboard layouts
+
+### Style with CSS
+
+Have looked at how to lay out elements, but not how to change appearance.
+
+Cascading style sheets (CSS) are a framework for customising the appearance of elements in a web page. With CSS can take basic elements of HTML app and tell browser how they should look.
+
+CSS code shows css for a webpage, links at top to a free CSS sheet from online. In style section is simple CSS, followed by simple text. li shows it is using CSS from above in script. Can look at sheet and output in more detail to get understanding of how it works. Hierarchical structure where previous instructions can be overridden in specific sections.
+
+Style a web page in three ways: 
+
+- link to an external CSS file
+- write global CSS in header
+- write individual CSS in a tag's style attribute
+
+Can match styling to:
+
+- Tag
+- Class
+- id
+
+In both cases, lower CSS items in list can override previous level.
+
+Shiny uses the Bootstrap 3 CSS framework. Can look up documentation to understand/alter it in eg fluidPage(). CSS designed to work with Boostrap 3 will work best with shiny.
+
+Style a Shiny App in three ways (as it is a web page):
+
+- link to an external CSS file
+- write global CSS in header
+- write individual CSS in a tag's style attribute
+
+1. Link to an external CSS file
+
+Place .css files in the www folder of your app directory. Shiny will share a file with your user's browser if the file appears in www. Shiny will not share files that you do not place in www. Set the theme argument of fluidPage to the .css filename, or place a link in the app's header to the file with `tags$head()` and `tag$link()`.
+
+2. Write global CSS in header
+
+Write global CSS with `tags$head()` and `tags$style()` and `HTML()` (example in slides). Or save the CSS as a file in your app directory (doesn't need to be www file) and include it with `includeCSS("file.css")` within fluidPage. Function copies and pastes CSS in.
+
+3. Write individual CSS in a tag's style attribute
+
+Set the style argument in Shiny's tag functions. eg `tags$h1("Title", style = "color:red;")`.
+
+More articles on shiny site about how to customise apps with HTML, CSS and Javascript. You can pair app with whatever web technologies you want. Further guides available explaining how to style apps with CSS.
+
+Can add google analytics to a shiny app- also articles on this.
+
+So:
+
+- style shiny apps like web pages: with CSS
+- shiny's general CSS classes come from the bootstrap 3 frameork
+- you can recreate HTML methods for including CSS with `tags$head()`, `tags$link()` and `tags$style()`
