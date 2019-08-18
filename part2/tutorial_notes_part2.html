@@ -7,6 +7,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
 <meta name="author" content="Amy R Hodgson" />
@@ -344,18 +345,6 @@ summary {
 }
 </style>
 
-<script>
-$(document).ready(function () {
-  window.buildTabsets("TOC");
-});
-
-$(document).ready(function () {
-  $('.tabset-dropdown > .nav-tabs > li').click(function () {
-    $(this).parent().toggleClass('nav-tabs-open')
-  });
-});
-</script>
-
 <!-- code folding -->
 
 
@@ -382,6 +371,8 @@ $(document).ready(function () {
 </div>
 
 
+<div id="how-to-customise-reactions" class="section level2">
+<h2>How to customise reactions</h2>
 <div id="what-is-reactivity" class="section level3">
 <h3>What is reactivity?</h3>
 <p>Example: entering values in cells in excel and manipulating them with fomulas to get result in different cells. Changing values will change result of formulas being applied (output). In shiny, changes in input objects propagate to output objects. Inputs are sliders/menus etc for user, output is tables/graphs etc. However, in shiny it can get more complex than this. Eg change in input could trigger other code to run on the serverside, or could create secondary reactive objects, and changes in these can trigger changes in output.</p>
@@ -598,8 +589,8 @@ shinyApp(ui = ui, server = server)</code></pre>
 <p>Input values change whenever a user changes the input, and you cannot set these values in your code. However, reactiveValues() allows you to create your own list of reactive values which can be manipulated programmatically.</p>
 <p><code>rv &lt;- reactiveValues(data = rnorm(100))</code></p>
 <p>It doesn’t require any arguments, but you can give it arguments to populate the list created. So this creates a reactiveValues list that begins with one element named data, and that element will contain 100 rnorm values.</p>
-<pre class="r"><code>library(shiny)
-ui &lt;- fluidPage(
+<p>Below, have a reactive value with one element ‘data’. Downstream is a histogram which takes dependency on <code>rv$data</code>. Whenever norm or unif are changed (clicked), it overwrites the value of <code>rv$data</code> and the render function will re-run its code, fetching new value of <code>rv$data</code> and updating plot.</p>
+<pre class="r"><code>ui &lt;- fluidPage(
   actionButton(inputId = &quot;norm&quot;, label = &quot;Normal&quot;),
   actionButton(inputId = &quot;unif&quot;, label = &quot;uniform&quot;),
   plotOutput(&quot;hist&quot;)
@@ -618,7 +609,18 @@ server &lt;- function(input, output) {
 }
 
 shinyApp(ui = ui, server = server)</code></pre>
-<div style="width: 100% ; height: 400px ; text-align: center; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;" class="muted well">Shiny applications not supported in static R Markdown documents</div>
+<p>Using observeEvent, can overwite rv$data each time either button is clicked.</p>
+<p>So:</p>
+<ul>
+<li>reactiveValues() creates a list of reactive vaues</li>
+<li>You can manipulate these values (usually with observeEvent)</li>
+</ul>
+<p>Tips:</p>
+<p>Keep in mind the end result of what app is going to be. Number of users, how hosted etc affects how should write code. Code may be repeated multiple times. If you write code outside of the server function, it will be run once every time a new R session is created. If you only need to run code once to set things up, eg ui and library, place this outside of the server function.</p>
+<p>Code inside the server function will be run once per user end user who logs into R session. There will be more users than R sessions, so code appearing in the server function will be run more often than code outside it- this takes up more resources and makes app slower.</p>
+<p>The code inside a render function will be run once per reaction, potentially many times. So should place bare minimum code inside a render function that is necessary for updating the output.</p>
+<p>Secondly, if want to understand how R implements reactivity with shiny, can look through the source code for shiny, or read article about it.</p>
+</div>
 </div>
 </div>
 
@@ -639,6 +641,23 @@ $(document).ready(function () {
 
 
 </script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>

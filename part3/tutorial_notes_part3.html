@@ -7,6 +7,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
 <meta name="author" content="Amy R Hodgson" />
@@ -344,18 +345,6 @@ summary {
 }
 </style>
 
-<script>
-$(document).ready(function () {
-  window.buildTabsets("TOC");
-});
-
-$(document).ready(function () {
-  $('.tabset-dropdown > .nav-tabs > li').click(function () {
-    $(this).parent().toggleClass('nav-tabs-open')
-  });
-});
-</script>
-
 <!-- code folding -->
 
 
@@ -435,6 +424,184 @@ Images: <code>tags$img(height = 100, width = 100, src = &quot;imageurl&quot;)</c
 <h3>Create a layout</h3>
 <p>Use layout funcions to position elements within your app. Think of web page as having an x and y dimension, and can place elements anywhere within this. If think of app in 3 dimensions (adding z dimension), can stack some elements on top of each other.</p>
 <p>Layout functions: Add HTML that divides the UI into a grid. <code>fluidRow()</code> and <code>column()</code> are two main functions.</p>
+<p>fluidRow()</p>
+<p><code>fluidRow()</code> add rows to the grid. Each new row goes below the previous rows. Place within fluidPage, and each time called, will add new row to app. Doesn’t seem to necessarily require arguments.</p>
+<p>column()</p>
+<p><code>column()</code> adds columns within a row. Each new column goes to the left of the previous column. Specify the width and offset of each column out of 12. Width is how many units wide, offest how far pushed to the right. To place an element in the grid, call it as an argument of a layout function.</p>
+<pre class="r"><code>ui &lt;- fluidPage(
+  fluidRow(
+    column(3),
+    column(5)),
+  fluidRow(
+    column(4, offset = 8)
+  )
+)</code></pre>
+<p>If want to put something in a row, can just pass it as text to fluidRow(). If want to put an output in a column, pass to column, eg <code>column(2, plotOutput(&quot;hist&quot;))</code></p>
+<pre class="r"><code>library(shiny)
+
+ui &lt;- fluidPage(
+  fluidRow(
+   column(3),
+   column(5, sliderInput(inputId = &quot;num&quot;, 
+     label = &quot;Choose a number&quot;, 
+     value = 25, min = 1, max = 100))
+  ),
+  fluidRow(
+    column(4, offset = 8,
+      plotOutput(&quot;hist&quot;)
+    )
+  )
+)
+
+server &lt;- function(input, output) {
+  output$hist &lt;- renderPlot({
+    hist(rnorm(input$num))
+  })
+}
+
+shinyApp(ui = ui, server = server)</code></pre>
+<p>So layout functions:</p>
+<ul>
+<li>Position elements in a grid, or stack them in layers</li>
+<li>use fluidRow() to arrange elements in rows</li>
+<li>use column() to arrange elements in columns</li>
+<li>position columns with width and offset arguments</li>
+</ul>
+</div>
+<div id="assemble-layers-of-panels" class="section level3">
+<h3>Assemble layers of panels</h3>
+<p>Panels to group multiple elements into a single unit with its own properties.</p>
+<p>wellPanel(): Groups elements into a grey ‘well’</p>
+<pre class="r"><code>library(shiny)
+
+ui &lt;- fluidPage(
+  wellPanel(
+    sliderInput(inputId = &quot;num&quot;, 
+      label = &quot;Choose a number&quot;, 
+      value = 25, min = 1, max = 100),
+    textInput(inputId = &quot;title&quot;, 
+      label = &quot;Write a title&quot;,
+      value = &quot;Histogram of Random Normal Values&quot;)
+  ),
+  plotOutput(&quot;hist&quot;)
+)
+
+server &lt;- function(input, output) {
+  output$hist &lt;- renderPlot({
+    hist(rnorm(input$num), main = input$title)
+  })
+}
+
+shinyApp(ui = ui, server = server)</code></pre>
+<p>There are 12 *Panel functions to make different kinds of panels. 3 of these are involved with stacking panels on top of each other.</p>
+<p>To stack things, begin with tabPanel(). It creates a stackable layer of elements. Each tab is like a small UI of its own.</p>
+<p><code>tabPanel(&quot;Tab1&quot;,...)</code></p>
+<p>Includes title, Tab1, for navigation. Following this, give it whatever elements you want to appear in the tab. Combine tabPanels with one of tabsetPanel(), navlistPanel(), navbarPage().</p>
+<p>tabsetPanel() combines tabs into a single panel. Use tabs to navigate between tabs, eg in tabs code. Example:</p>
+<pre class="r"><code>fluidPage(
+  tabsetPanel(
+    tabPanel(&quot;Tab1&quot;, &quot;contents&quot;),
+    tabPanel(&quot;Tab2&quot;, &quot;contents&quot;)
+    )
+  )</code></pre>
+<p>navlistPanel() combines tabs into a single panel. Use links to navigate between tabs. Creates sidebar, works same way as tabset. Eg in navlist code.</p>
+<pre class="r"><code>fluidPage(
+  navlistPanel(
+    tabPanel(&quot;tab1&quot;, &quot;Contents&quot;)
+    tabPanel(&quot;Tab2&quot;, &quot;Contents&quot;)
+  )
+)</code></pre>
+<p>So Panels:</p>
+<ul>
+<li>Panels group elements into a single unit for aesthetic or functional reasons</li>
+<li>Use tabPanel() to create a stackable panel</li>
+<li>Use tabsetPanel to arrange tabpanels into a stack with tab navigation</li>
+<li>Use navlistPanel to arrange tab panels into a stack with sidebar navigation</li>
+</ul>
+<p>All documented in shiny layour guide.</p>
+</div>
+<div id="use-a-prepackaged-layout" class="section level3">
+<h3>Use a prepackaged layout</h3>
+<p>sidebarLayout(): Use with sidebarPanel and mainPanel to divide app into two sections- sidebat and main display sections. Takes 2 arguments- output of sidebarPanel and mainPanel. Sidebar can include sliders, text boxes etc. Full example in sidebar code.</p>
+<pre class="r"><code>ui &lt;- fluidPage(
+  sidebarLayout(
+    sidebarPanel(),
+    mainPanel()
+  )
+)</code></pre>
+<p>fixedPage() creates a page that defaults to a width of 724, 940 or 1170 pixels (depending on browser window). Use with fixedRow. Compare to fluidPage and fluidRow which adjust to browser window.</p>
+<pre class="r"><code>ui &lt;- fixedPage(
+  fixedRow(
+    column(5, # etc)
+  )
+)</code></pre>
+<p>navbarPage() combines tabs into a single page. navbarPage() replaces fluidPage(). Requires title. With this, the entire app is the stack rather than it being an element. Gives appearance that app is a set of webpages you can navigate back and forth in.</p>
+<pre class="r"><code>navbarPage(title = &quot;Title&quot;,
+           tabPanel(&quot;tab1&quot;, &quot;contents&quot;),
+           tabPanel(&quot;tab2&quot;, &quot;contents&quot;)
+           )</code></pre>
+<p>navbarMenu() is a helper function that allows you to put even more tabs into a single navbar. Similar to above, but combines tab links into a dropdown menu for navbarPage.</p>
+<p>dashboardPage() comes in the shinydashboard package. Creates aesthetically pleasing page similar to above. Specific tutorial on this on rstudio site.</p>
+<pre class="r"><code>library(shinydashboard)
+
+ui &lt;- dashboardPage(
+  dashboardHeader(),
+  dashboardSidebar(),
+  dashboardBody()
+)</code></pre>
+<p>So with prepackaged layouts:</p>
+<ul>
+<li>Use sidebarLayout with sidebarPanel and mainPanel to quickly create a sidebar design</li>
+<li>Use fixedPanel with fixedRow to create a fixed (non-fluid) design</li>
+<li>Use navbarPage perhaps with navbarMenu to create ‘multipage’ app</li>
+<li>use shinyDashboard package to create dashboard layouts</li>
+</ul>
+</div>
+<div id="style-with-css" class="section level3">
+<h3>Style with CSS</h3>
+<p>Have looked at how to lay out elements, but not how to change appearance.</p>
+<p>Cascading style sheets (CSS) are a framework for customising the appearance of elements in a web page. With CSS can take basic elements of HTML app and tell browser how they should look.</p>
+<p>CSS code shows css for a webpage, links at top to a free CSS sheet from online. In style section is simple CSS, followed by simple text. li shows it is using CSS from above in script. Can look at sheet and output in more detail to get understanding of how it works. Hierarchical structure where previous instructions can be overridden in specific sections.</p>
+<p>Style a web page in three ways:</p>
+<ul>
+<li>link to an external CSS file</li>
+<li>write global CSS in header</li>
+<li>write individual CSS in a tag’s style attribute</li>
+</ul>
+<p>Can match styling to:</p>
+<ul>
+<li>Tag</li>
+<li>Class</li>
+<li>id</li>
+</ul>
+<p>In both cases, lower CSS items in list can override previous level.</p>
+<p>Shiny uses the Bootstrap 3 CSS framework. Can look up documentation to understand/alter it in eg fluidPage(). CSS designed to work with Boostrap 3 will work best with shiny.</p>
+<p>Style a Shiny App in three ways (as it is a web page):</p>
+<ul>
+<li>link to an external CSS file</li>
+<li>write global CSS in header</li>
+<li>write individual CSS in a tag’s style attribute</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li>Link to an external CSS file</li>
+</ol>
+<p>Place .css files in the www folder of your app directory. Shiny will share a file with your user’s browser if the file appears in www. Shiny will not share files that you do not place in www. Set the theme argument of fluidPage to the .css filename, or place a link in the app’s header to the file with <code>tags$head()</code> and <code>tag$link()</code>.</p>
+<ol start="2" style="list-style-type: decimal">
+<li>Write global CSS in header</li>
+</ol>
+<p>Write global CSS with <code>tags$head()</code> and <code>tags$style()</code> and <code>HTML()</code> (example in slides). Or save the CSS as a file in your app directory (doesn’t need to be www file) and include it with <code>includeCSS(&quot;file.css&quot;)</code> within fluidPage. Function copies and pastes CSS in.</p>
+<ol start="3" style="list-style-type: decimal">
+<li>Write individual CSS in a tag’s style attribute</li>
+</ol>
+<p>Set the style argument in Shiny’s tag functions. eg <code>tags$h1(&quot;Title&quot;, style = &quot;color:red;&quot;)</code>.</p>
+<p>More articles on shiny site about how to customise apps with HTML, CSS and Javascript. You can pair app with whatever web technologies you want. Further guides available explaining how to style apps with CSS.</p>
+<p>Can add google analytics to a shiny app- also articles on this.</p>
+<p>So:</p>
+<ul>
+<li>style shiny apps like web pages: with CSS</li>
+<li>shiny’s general CSS classes come from the bootstrap 3 frameork</li>
+<li>you can recreate HTML methods for including CSS with <code>tags$head()</code>, <code>tags$link()</code> and <code>tags$style()</code></li>
+</ul>
 </div>
 </div>
 
@@ -455,6 +622,23 @@ $(document).ready(function () {
 
 
 </script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>

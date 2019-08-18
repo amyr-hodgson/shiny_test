@@ -383,6 +383,8 @@ $(document).ready(function () {
 
 
 <p>Following the video tutorial by Garrett Grolemund at <a href="https://shiny.rstudio.com/tutorial/" class="uri">https://shiny.rstudio.com/tutorial/</a></p>
+<div id="how-to-build-a-shiny-app" class="section level2">
+<h2>How to build a shiny app</h2>
 <p>The recommended template for a shiny app:</p>
 <pre class="r"><code>library(shiny)
 
@@ -406,7 +408,7 @@ shinyApp(ui = ui, server = server)</code></pre>
 server &lt;- function(input, output) {}
 
 shinyApp(ui = ui, server = server)</code></pre>
-<p>All *Input functions have similar syntax. Begin by taking inputId argument, eg “num”, allows to assign a name to input. Each input in app should have unique name. Second argument is label to explain input, eg “choose a number”. Then each Input function takes additional arguments specific to type.</p>
+<p>All *Input functions have similar syntax. Begin by taking inputId argument, eg “num”, allows to assign a name to input. This value can then be available to use in code for server function. Each input in app should have unique name. Second argument is label to explain input, eg “choose a number”. Then each Input function takes additional arguments specific to type.</p>
 <p>Output functions place different types of output in app, dedicated function for each type, eg tableOutput. Output functions take one required argument outputID to name output object, eg <code>plotOutput(outputId = &quot;hist&quot;)</code>.</p>
 <pre class="r"><code>ui &lt;- fluidPage(
   sliderInput(inputId = &quot;num&quot;,
@@ -444,8 +446,35 @@ server &lt;- function(input, output) {            # Or develop more fully as bra
   })
 }</code></pre>
 <ol start="3" style="list-style-type: decimal">
-<li></li>
+<li>Use input values with <code>input$</code>. Input values are e.g. those in dropdown menus/sliders etc in app. Input value changes whenever user changes the input.</li>
 </ol>
+<pre class="r"><code>server &lt;- function(input, output) {            
+  output$hist &lt;- renderPlot({hist(rnorm(input$num))
+    
+  })
+}</code></pre>
+<p>Reactivity 101: Reactivity automatically occurs whenever you use an input value to render an output object.</p>
+<pre class="r"><code>ui &lt;- fluidPage(
+  sliderInput(inputId = &quot;num&quot;, 
+    label = &quot;Choose a number&quot;, 
+    value = 25, min = 1, max = 100),
+  plotOutput(&quot;hist&quot;)
+)
+
+server &lt;- function(input, output) {
+  output$hist &lt;- renderPlot({
+    hist(rnorm(input$num))
+  })
+}
+
+shinyApp(ui = ui, server = server)</code></pre>
+<p>How to save apps:</p>
+<p>Have one directory with every file your app needs - app.R (your script which ends with a call to shinyApp()) - has to have this name - datasets, images, css, helper scripts, etc</p>
+<p>Previously it was necessary to have 2 files for the app- one for the UI and one for the server function. Still possible to do it this way if you want.</p>
+<p>Helpfully, if you name your script app.R, RStudio will recognise this and add run app button to top of the page. This allows you to run app either in seperate window or in viewer pane.</p>
+<p>Now that app can be packaged up in directory, one option to share online is using shinyapps.io. Free to use (for max 5 apps), server built and maintained by RStudio. To do this, visit shinyapps.io and set up account, linking github/RStudio with site. Upload app and it will have own url. Can then see usage data for app, change settings etc. Can make private so people have to sign in to see it.</p>
+<p>Alternatively can build own server. There is a product called Shiny server (rstudio.com/products/shiny/shiny-server), it is a back end program that builds a linux web server specifically designed to host shiny apps. Free and open source program. Can download and use to set up your own server to host shiny apps on internet/intranet.</p>
+</div>
 
 
 
